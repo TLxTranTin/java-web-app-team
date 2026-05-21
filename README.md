@@ -1,15 +1,26 @@
 # java-web-app-team
 module/
+
 ├── adapter/
+
 │   ├── in/web                 // Controller nhận request từ FE
+
 │   └── out/persistence         // Entity, JpaRepository, PersistenceAdapter làm với database
+
 │
+
 ├── application/
+
 │   ├── port/in                 // UseCase interface: bên ngoài gọi vào app
+
 │   ├── port/out                // RepositoryPort interface: app gọi ra ngoài
+
 │   └── service                 // Logic nghiệp vụ
+
 │
+
 ├── domain/model                // Domain model thuần nghiệp vụ
+
 └── dto                         // Request/Response DTO giao tiếp FE/BE
 
 
