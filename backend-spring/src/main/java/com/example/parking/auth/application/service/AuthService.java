@@ -75,7 +75,7 @@ public class AuthService implements IAuthUseCase {
 
     private UserRole parseRole(String role) {
         if (role == null || role.isBlank()) {
-            return UserRole.GUARD;
+            return UserRole.STAFF;
         }
 
         try {
