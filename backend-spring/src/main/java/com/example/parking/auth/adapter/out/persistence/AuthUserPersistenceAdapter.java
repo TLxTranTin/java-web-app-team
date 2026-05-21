@@ -9,9 +9,9 @@ import java.util.Optional;
 @Repository
 public class AuthUserPersistenceAdapter implements IAuthUserRepositoryPort {
 
-    private final AuthUserJpaRepository jpaRepository;
+    private final IAuthUserJpaRepository jpaRepository;
 
-    public AuthUserPersistenceAdapter(AuthUserJpaRepository jpaRepository) {
+    public AuthUserPersistenceAdapter(IAuthUserJpaRepository jpaRepository) {
         this.jpaRepository = jpaRepository;
     }
 

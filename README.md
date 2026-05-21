@@ -1,28 +1,16 @@
 # java-web-app-team
 module/
-
 ├── adapter/
-
 │   ├── in/web                 // Controller nhận request từ FE
-
 │   └── out/persistence         // Entity, JpaRepository, PersistenceAdapter làm với database
-
 │
-
 ├── application/
-
 │   ├── port/in                 // UseCase interface: bên ngoài gọi vào app
-
 │   ├── port/out                // RepositoryPort interface: app gọi ra ngoài
-
 │   └── service                 // Logic nghiệp vụ
-
 │
-
 ├── domain/model                // Domain model thuần nghiệp vụ
-
 └── dto                         // Request/Response DTO giao tiếp FE/BE
-
 
 
 
@@ -55,4 +43,3 @@ mvn spring-boot:run
 
 ==========================================
 Mọi người tự làm rõ các Use Case nếu cần thiết , như thêm chức năng j đó cho module mình làm nếu hợp lí
-=======
