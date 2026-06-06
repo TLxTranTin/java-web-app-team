@@ -22,8 +22,7 @@ public class BuildingService implements IBuildingUseCase {
     @Override
     public BuildingResponse createBuilding(BuildingRequest request) {
         Building building = new Building(null, request.getName(), request.getAddress(), request.getDescription());
-        Building savedBuilding = buildingRepositoryPort.save(building);
-        return mapToResponse(savedBuilding);
+        return mapToResponse(buildingRepositoryPort.save(building));
     }
 
     @Override
@@ -43,6 +42,18 @@ public class BuildingService implements IBuildingUseCase {
     @Override
     public void deleteBuilding(Long id) {
         buildingRepositoryPort.deleteById(id);
+    }
+
+    @Override
+    public BuildingResponse updateBuilding(Long id, BuildingRequest request) {
+        Building existingBuilding = buildingRepositoryPort.findById(id)
+                .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
+        
+        existingBuilding.setName(request.getName());
+        existingBuilding.setAddress(request.getAddress());
+        existingBuilding.setDescription(request.getDescription());
+        
+        return mapToResponse(buildingRepositoryPort.save(existingBuilding));
     }
 
     private BuildingResponse mapToResponse(Building building) {

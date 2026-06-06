@@ -38,4 +38,9 @@ public class BuildingController {
         buildingUseCase.deleteBuilding(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BuildingResponse> updateBuilding(@PathVariable Long id, @RequestBody BuildingRequest request) {
+        return ResponseEntity.ok(buildingUseCase.updateBuilding(id, request));
+    }
 }

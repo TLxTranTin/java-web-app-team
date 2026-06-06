@@ -9,4 +9,5 @@ public interface IBuildingUseCase {
     BuildingResponse getBuildingById(Long id);
     List<BuildingResponse> getAllBuildings();
     void deleteBuilding(Long id);
+    BuildingResponse updateBuilding(Long id, BuildingRequest request); 
 }
