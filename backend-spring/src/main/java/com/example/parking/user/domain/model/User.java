@@ -1,39 +1,18 @@
-package com.example.parking.auth.adapter.out.persistence;
+package com.example.parking.user.domain.model;
 
 import com.example.parking.auth.domain.model.UserRole;
-import jakarta.persistence.*;
 
-@Entity
-@Table(name = "auth_users")
-public class AuthUserEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class User {
     private Long id;
-
-    @Column(nullable = false, unique = true, length = 100)
     private String username;
-
-    @Column(nullable = false)
     private String passwordHash;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
     private UserRole role;
-
-    @Column(length = 150)
     private String fullName;
-
-    @Column(length = 150)
     private String email;
-
-    @Column(length = 20)
     private String phone;
 
-    public AuthUserEntity() {}
-
-    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role,
-                          String fullName, String email, String phone) {
+    public User(Long id, String username, String passwordHash, UserRole role,
+                String fullName, String email, String phone) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -43,10 +22,6 @@ public class AuthUserEntity {
         this.phone = phone;
     }
 
-    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role) {
-        this(id, username, passwordHash, role, null, null, null);
-    }
-
     public Long getId()            { return id; }
     public String getUsername()    { return username; }
     public String getPasswordHash(){ return passwordHash; }
@@ -54,4 +29,12 @@ public class AuthUserEntity {
     public String getFullName()    { return fullName; }
     public String getEmail()       { return email; }
     public String getPhone()       { return phone; }
+
+    public User withPasswordHash(String newHash) {
+        return new User(id, username, newHash, role, fullName, email, phone);
+    }
+
+    public User withRole(UserRole newRole) {
+        return new User(id, username, passwordHash, newRole, fullName, email, phone);
+    }
 }
