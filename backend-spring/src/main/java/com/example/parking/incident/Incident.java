@@ -3,36 +3,21 @@ package com.example.parking.incident;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "incidents")
+
 public class Incident {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Enumerated(EnumType.STRING)
     private IncidentType type;
-
-    @Enumerated(EnumType.STRING)
     private IncidentStatus status;
-
     private String reportedBy;
     private String vehiclePlate;
     private String slotCode;
-
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
     public Incident() {
     }
-
-    @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
@@ -46,7 +31,6 @@ public class Incident {
         }
     }
 
-    @PreUpdate
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
