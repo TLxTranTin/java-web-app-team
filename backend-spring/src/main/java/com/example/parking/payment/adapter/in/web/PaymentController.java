@@ -1,86 +1,110 @@
 package com.example.parking.payment.adapter.in.web;
 
-import com.example.parking.payment.application.port.in.IPaymentUseCase;
-import com.example.parking.payment.application.service.MomoService;
-import com.example.parking.payment.dto.PaymentRequest;
-import com.example.parking.payment.dto.PaymentResponse;
+import com.example.parking.payment.adapter.in.web.dto.PayMyInvoicesRequest;
+import com.example.parking.payment.adapter.in.web.dto.PaymentResponse;
+import com.example.parking.payment.application.port.in.IGetPaymentUseCase;
+import com.example.parking.payment.application.port.in.IPayMyInvoicesUseCase;
+import com.example.parking.payment.domain.model.Payment;
 import com.example.parking.shared.response.ApiResponse;
+import com.example.parking.shared.security.CurrentUserPrincipal;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
 
-    private final IPaymentUseCase paymentUseCase;
-    private final MomoService momoService;
+    private final IPayMyInvoicesUseCase payMyInvoicesUseCase;
+    private final IGetPaymentUseCase getPaymentUseCase;
 
-    public PaymentController(IPaymentUseCase paymentUseCase, MomoService momoService) {
-        this.paymentUseCase = paymentUseCase;
-        this.momoService = momoService;
+    public PaymentController(
+            IPayMyInvoicesUseCase payMyInvoicesUseCase,
+            IGetPaymentUseCase getPaymentUseCase
+    ) {
+        this.payMyInvoicesUseCase = payMyInvoicesUseCase;
+        this.getPaymentUseCase = getPaymentUseCase;
     }
 
-    // ===== CRUD cũ =====
+    @PostMapping("/my-invoices")
+    public ResponseEntity<ApiResponse<PaymentResponse>> payMyInvoices(
+            @Valid @RequestBody PayMyInvoicesRequest request,
+            Authentication authentication
+    ) {
+        CurrentUserPrincipal currentUser = getCurrentUser(authentication);
 
-    @PostMapping
-    public ApiResponse<PaymentResponse> create(@Valid @RequestBody PaymentRequest request) {
-        return ApiResponse.success("Tạo thanh toán thành công", paymentUseCase.createPayment(request));
-    }
+        if (currentUser == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Unauthorized"));
+        }
 
-    @GetMapping("/{id}")
-    public ApiResponse<PaymentResponse> getById(@PathVariable Long id) {
-        return ApiResponse.success("Lấy thông tin thanh toán thành công", paymentUseCase.getPayment(id));
+        Payment payment = payMyInvoicesUseCase.payMyInvoices(
+                currentUser.getId(),
+                request.getInvoiceIds(),
+                request.getMethod()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Payment successfully", toResponse(payment))
+        );
     }
 
     @GetMapping
-    public ApiResponse<List<PaymentResponse>> getAll() {
-        return ApiResponse.success("Lấy danh sách thanh toán thành công", paymentUseCase.getAllPayments());
+    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPayments(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String method,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        List<PaymentResponse> payments = getPaymentUseCase.getPayments(
+                        userId,
+                        status,
+                        method,
+                        fromDate,
+                        toDate
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Get payments successfully", payments)
+        );
     }
 
-    @PutMapping("/{id}")
-    public ApiResponse<PaymentResponse> update(@PathVariable Long id,
-                                                @Valid @RequestBody PaymentRequest request) {
-        return ApiResponse.success("Cập nhật thanh toán thành công", paymentUseCase.updatePayment(id, request));
-    }
-
-    @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        paymentUseCase.deletePayment(id);
-        return ApiResponse.success("Xóa thanh toán thành công", null);
-    }
-
-    // ===== MoMo =====
-
-    @PostMapping("/momo/create")
-    public ApiResponse<String> createMomoPayment(
-            @RequestParam Long orderId,
-            @RequestParam Long amount) throws Exception {
-        String payUrl = momoService.createPaymentUrl(orderId, amount);
-        return ApiResponse.success("Tạo link MoMo thành công", payUrl);
-    }
-
-    @GetMapping("/momo/return")
-    public ApiResponse<String> momoReturn(@RequestParam Map<String, String> params) {
-        String resultCode = params.get("resultCode");
-        if ("0".equals(resultCode)) {
-            return ApiResponse.success("Thanh toán thành công!", null);
+    private CurrentUserPrincipal getCurrentUser(Authentication authentication) {
+        if (authentication == null) {
+            return null;
         }
-        return ApiResponse.success("Thanh toán thất bại!", null);
+
+        Object principal = authentication.getPrincipal();
+
+        if (!(principal instanceof CurrentUserPrincipal currentUser)) {
+            return null;
+        }
+
+        return currentUser;
     }
 
-    @PostMapping("/momo/notify")
-    public ResponseEntity<String> momoNotify(
-            @RequestBody Map<String, String> params) throws Exception {
-        if (momoService.verifyCallback(params)) {
-            String resultCode = params.get("resultCode");
-            if ("0".equals(resultCode)) {
-                System.out.println("Thanh toán thành công, orderId: " + params.get("orderId"));
-            }
-        }
-        return ResponseEntity.ok("OK");
+    private PaymentResponse toResponse(Payment payment) {
+        return new PaymentResponse(
+                payment.getId(),
+                payment.getUserId(),
+                payment.getAmount(),
+                payment.getStatus(),
+                payment.getMethod(),
+                payment.getPaidAt(),
+                payment.getInvoiceIds()
+        );
     }
 }
