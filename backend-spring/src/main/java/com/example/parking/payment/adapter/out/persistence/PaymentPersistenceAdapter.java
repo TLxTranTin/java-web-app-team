@@ -5,49 +5,62 @@ import com.example.parking.payment.domain.model.Payment;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public class PaymentPersistenceAdapter implements IPaymentRepositoryPort {
 
-    private final IPaymentJpaRepository jpaRepository;
+    private final ISpringDataPaymentRepository springDataPaymentRepository;
 
-    public PaymentPersistenceAdapter(IPaymentJpaRepository jpaRepository) {
-        this.jpaRepository = jpaRepository;
+    public PaymentPersistenceAdapter(ISpringDataPaymentRepository springDataPaymentRepository) {
+        this.springDataPaymentRepository = springDataPaymentRepository;
     }
 
     @Override
     public Payment save(Payment payment) {
-        return toDomain(jpaRepository.save(toEntity(payment)));
+        PaymentEntity entity = toEntity(payment);
+        PaymentEntity savedEntity = springDataPaymentRepository.save(entity);
+        return toDomain(savedEntity);
     }
 
     @Override
-    public Optional<Payment> findById(Long id) {
-        return jpaRepository.findById(id).map(this::toDomain);
+    public List<Payment> findAllOrderByPaidAtDesc() {
+        return springDataPaymentRepository.findAllByOrderByPaidAtDesc()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
-    @Override
-    public List<Payment> findAll() {
-        return jpaRepository.findAll().stream().map(this::toDomain).toList();
+    private Payment toDomain(PaymentEntity entity) {
+        List<Long> invoiceIds = entity.getInvoiceItems()
+                .stream()
+                .map(PaymentInvoiceItemEntity::getInvoiceId)
+                .toList();
+
+        return new Payment(
+                entity.getId(),
+                entity.getUserId(),
+                entity.getAmount(),
+                entity.getStatus(),
+                entity.getMethod(),
+                entity.getPaidAt(),
+                invoiceIds
+        );
     }
 
-    @Override
-    public void deleteById(Long id) {
-        jpaRepository.deleteById(id);
-    }
+    private PaymentEntity toEntity(Payment payment) {
+        List<PaymentInvoiceItemEntity> invoiceItems = payment.getInvoiceIds()
+                .stream()
+                .map(PaymentInvoiceItemEntity::new)
+                .toList();
 
-    @Override
-    public boolean existsById(Long id) {
-        return jpaRepository.existsById(id);
-    }
-
-    private Payment toDomain(PaymentEntity e) {
-        return new Payment(e.getId(), e.getParkingSessionId(), e.getAmount(),
-                e.getMethod(), e.getStatus(), e.getPaidAt(), e.getNote());
-    }
-
-    private PaymentEntity toEntity(Payment p) {
-        return new PaymentEntity(p.getId(), p.getParkingSessionId(), p.getAmount(),
-                p.getMethod(), p.getStatus(), p.getPaidAt(), p.getNote());
+        return new PaymentEntity(
+                payment.getId(),
+                payment.getUserId(),
+                payment.getAmount(),
+                payment.getStatus(),
+                payment.getMethod(),
+                payment.getPaidAt(),
+                invoiceItems
+        );
     }
 }
