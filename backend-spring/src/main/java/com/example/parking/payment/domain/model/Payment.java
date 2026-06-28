@@ -2,35 +2,61 @@ package com.example.parking.payment.domain.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class Payment {
-    private Long id;
-    private Long parkingSessionId;
-    private BigDecimal amount;
-    private PaymentMethod method;
-    private PaymentStatus status;
-    private LocalDateTime paidAt;
-    private String note;
 
-    public Payment() {}
+    private final Long id;
+    private final Long userId;
+    private final BigDecimal amount;
+    private final PaymentStatus status;
+    private final PaymentMethod method;
+    private final LocalDateTime paidAt;
+    private final List<Long> invoiceIds;
 
-    public Payment(Long id, Long parkingSessionId, BigDecimal amount,
-                   PaymentMethod method, PaymentStatus status,
-                   LocalDateTime paidAt, String note) {
+    public Payment(
+            Long id,
+            Long userId,
+            BigDecimal amount,
+            PaymentStatus status,
+            PaymentMethod method,
+            LocalDateTime paidAt,
+            List<Long> invoiceIds
+    ) {
         this.id = id;
-        this.parkingSessionId = parkingSessionId;
+        this.userId = userId;
         this.amount = amount;
-        this.method = method;
         this.status = status;
+        this.method = method;
         this.paidAt = paidAt;
-        this.note = note;
+        this.invoiceIds = invoiceIds == null ? List.of() : List.copyOf(invoiceIds);
     }
 
-    public Long getId() { return id; }
-    public Long getParkingSessionId() { return parkingSessionId; }
-    public BigDecimal getAmount() { return amount; }
-    public PaymentMethod getMethod() { return method; }
-    public PaymentStatus getStatus() { return status; }
-    public LocalDateTime getPaidAt() { return paidAt; }
-    public String getNote() { return note; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public PaymentMethod getMethod() {
+        return method;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public List<Long> getInvoiceIds() {
+        return invoiceIds;
+    }
 }
