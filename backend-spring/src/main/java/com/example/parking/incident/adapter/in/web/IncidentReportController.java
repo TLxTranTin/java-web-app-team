@@ -14,14 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -55,23 +48,17 @@ public class IncidentReportController {
             return unauthorized();
         }
 
-        IncidentReport report =
-                createIncidentReportUseCase.createMyReport(
-                        currentUser.getId(),
-                        request.getTitle(),
-                        request.getDescription(),
-                        request.getType(),
-                        request.getPriority(),
-                        request.getPlateNumber()
-                );
-
-        IncidentReportResponse response = toResponse(report);
+        IncidentReport report = createIncidentReportUseCase.createMyReport(
+                currentUser.getId(),
+                request.getTitle(),
+                request.getDescription(),
+                request.getType(),
+                request.getPriority(),
+                request.getPlateNumber()
+        );
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Create incident report successfully",
-                        response
-                )
+                ApiResponse.success("Create incident report successfully", toResponse(report))
         );
     }
 
@@ -85,18 +72,13 @@ public class IncidentReportController {
             return unauthorized();
         }
 
-        List<IncidentReportResponse> reports =
-                getIncidentReportUseCase
-                        .getMyReports(currentUser.getId())
-                        .stream()
-                        .map(this::toResponse)
-                        .toList();
+        List<IncidentReportResponse> reports = getIncidentReportUseCase.getMyReports(currentUser.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get my incident reports successfully",
-                        reports
-                )
+                ApiResponse.success("Get my incident reports successfully", reports)
         );
     }
 
@@ -107,35 +89,26 @@ public class IncidentReportController {
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String plateNumber,
-
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate fromDate,
-
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate toDate
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
-        List<IncidentReportResponse> reports =
-                getIncidentReportUseCase
-                        .getReports(
-                                status,
-                                type,
-                                priority,
-                                userId,
-                                plateNumber,
-                                fromDate,
-                                toDate
-                        )
-                        .stream()
-                        .map(this::toResponse)
-                        .toList();
+        List<IncidentReportResponse> reports = getIncidentReportUseCase.getReports(
+                        status,
+                        type,
+                        priority,
+                        userId,
+                        plateNumber,
+                        fromDate,
+                        toDate
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Get incident reports successfully",
-                        reports
-                )
+                ApiResponse.success("Get incident reports successfully", reports)
         );
     }
 
@@ -144,51 +117,38 @@ public class IncidentReportController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateIncidentStatusRequest request
     ) {
-        IncidentReport report =
-                updateIncidentStatusUseCase.updateStatus(
-                        id,
-                        request.getStatus(),
-                        request.getStaffNote()
-                );
-
-        IncidentReportResponse response = toResponse(report);
+        IncidentReport report = updateIncidentStatusUseCase.updateStatus(
+                id,
+                request.getStatus(),
+                request.getStaffNote()
+        );
 
         return ResponseEntity.ok(
-                ApiResponse.success(
-                        "Update incident status successfully",
-                        response
-                )
+                ApiResponse.success("Update incident status successfully", toResponse(report))
         );
     }
 
-    private CurrentUserPrincipal getCurrentUser(
-            Authentication authentication
-    ) {
+    private CurrentUserPrincipal getCurrentUser(Authentication authentication) {
         if (authentication == null) {
             return null;
         }
 
         Object principal = authentication.getPrincipal();
 
-        if (principal instanceof CurrentUserPrincipal) {
-            return (CurrentUserPrincipal) principal;
+        if (!(principal instanceof CurrentUserPrincipal currentUser)) {
+            return null;
         }
 
-        return null;
+        return currentUser;
     }
 
     private <T> ResponseEntity<ApiResponse<T>> unauthorized() {
-        ApiResponse<T> response =
-                ApiResponse.error("Unauthorized");
-
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(response);
+                .body(ApiResponse.error("Unauthorized"));
     }
 
-    private IncidentReportResponse toResponse(
-            IncidentReport report
-    ) {
+    private IncidentReportResponse toResponse(IncidentReport report) {
         return new IncidentReportResponse(
                 report.getId(),
                 report.getUserId(),
@@ -205,4 +165,3 @@ public class IncidentReportController {
         );
     }
 }
-
