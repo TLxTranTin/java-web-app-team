@@ -1,114 +1,101 @@
 package com.example.parking.vehicle.adapter.out.persistence;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-import java.time.LocalDateTime;
+import com.example.parking.vehicle.domain.model.VehicleStatus;
+import com.example.parking.vehicle.domain.model.VehicleType;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "vehicles")
 public class VehicleEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(name = "license_plate", nullable = false, unique = true)
-    private String licensePlate;
-    
-    private String color;
-    
+
+    @Column(name = "plate_number", nullable = false, unique = true, length = 30)
+    private String plateNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private VehicleType type;
+
+    @Column(name = "owner_name", nullable = false, length = 100)
+    private String ownerName;
+
+    @Column(name = "owner_user_id")
+    private Long ownerUserId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private VehicleStatus status;
+
+    @Column(name = "brand", length = 100)
     private String brand;
-    
-    private String model;
-    
-    @Column(name = "vehicle_type_id")
-    private Long vehicleTypeId;
-    
-    @Column(name = "vehicle_type_name")
-    private String vehicleTypeName;
-    
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
-    public VehicleEntity() {
+
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Column(name = "description", length = 255)
+    private String description;
+
+    protected VehicleEntity() {
     }
-    
+
+    public VehicleEntity(
+            Long id,
+            String plateNumber,
+            VehicleType type,
+            String ownerName,
+            Long ownerUserId,
+            VehicleStatus status,
+            String brand,
+            String color,
+            String description
+    ) {
+        this.id = id;
+        this.plateNumber = plateNumber;
+        this.type = type;
+        this.ownerName = ownerName;
+        this.ownerUserId = ownerUserId;
+        this.status = status == null ? VehicleStatus.APPROVED : status;
+        this.brand = brand;
+        this.color = color;
+        this.description = description;
+    }
+
     public Long getId() {
         return id;
     }
-    
-    public void setId(Long id) {
-        this.id = id;
+
+    public String getPlateNumber() {
+        return plateNumber;
     }
-    
-    public String getLicensePlate() {
-        return licensePlate;
+
+    public VehicleType getType() {
+        return type;
     }
-    
-    public void setLicensePlate(String licensePlate) {
-        this.licensePlate = licensePlate;
+
+    public String getOwnerName() {
+        return ownerName;
     }
-    
-    public String getColor() {
-        return color;
+
+    public Long getOwnerUserId() {
+        return ownerUserId;
     }
-    
-    public void setColor(String color) {
-        this.color = color;
+
+    public VehicleStatus getStatus() {
+        return status;
     }
-    
+
     public String getBrand() {
         return brand;
     }
-    
-    public void setBrand(String brand) {
-        this.brand = brand;
+
+    public String getColor() {
+        return color;
     }
-    
-    public String getModel() {
-        return model;
-    }
-    
-    public void setModel(String model) {
-        this.model = model;
-    }
-    
-    public Long getVehicleTypeId() {
-        return vehicleTypeId;
-    }
-    
-    public void setVehicleTypeId(Long vehicleTypeId) {
-        this.vehicleTypeId = vehicleTypeId;
-    }
-    
-    public String getVehicleTypeName() {
-        return vehicleTypeName;
-    }
-    
-    public void setVehicleTypeName(String vehicleTypeName) {
-        this.vehicleTypeName = vehicleTypeName;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+
+    public String getDescription() {
+        return description;
     }
 }

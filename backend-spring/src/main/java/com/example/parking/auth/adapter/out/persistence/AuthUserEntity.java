@@ -1,6 +1,6 @@
 package com.example.parking.auth.adapter.out.persistence;
 
-import com.example.parking.auth.domain.model.UserRole;
+import com.example.parking.auth.domain.model.Role;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,44 +14,50 @@ public class AuthUserEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String username;
 
-    @Column(nullable = false)
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private UserRole role;
+    private Role role;
 
-    @Column(length = 150)
-    private String fullName;
+    @Column(nullable = false)
+    private boolean enabled = true;
 
-    @Column(length = 150)
-    private String email;
+    protected AuthUserEntity() {
+    }
 
-    @Column(length = 20)
-    private String phone;
-
-    public AuthUserEntity() {}
-
-    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role,
-                          String fullName, String email, String phone) {
+    public AuthUserEntity(
+            Long id,
+            String username,
+            String passwordHash,
+            Role role,
+            boolean enabled
+    ) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.role = role;
-        this.fullName = fullName;
-        this.email = email;
-        this.phone = phone;
+        this.enabled = enabled;
     }
 
-    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role) {
-        this(id, username, passwordHash, role, null, null, null);
+    public Long getId() {
+        return id;
     }
 
-    public Long getId()            { return id; }
-    public String getUsername()    { return username; }
-    public String getPasswordHash(){ return passwordHash; }
-    public UserRole getRole()      { return role; }
-    public String getFullName()    { return fullName; }
-    public String getEmail()       { return email; }
-    public String getPhone()       { return phone; }
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
 }

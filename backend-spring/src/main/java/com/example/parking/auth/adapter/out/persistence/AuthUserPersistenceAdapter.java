@@ -4,32 +4,47 @@ import com.example.parking.auth.application.port.out.IAuthUserRepositoryPort;
 import com.example.parking.auth.domain.model.AuthUser;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public class AuthUserPersistenceAdapter implements IAuthUserRepositoryPort {
 
-    private final IAuthUserJpaRepository jpaRepository;
+    private final ISpringDataAuthUserRepository springDataAuthUserRepository;
 
-    public AuthUserPersistenceAdapter(IAuthUserJpaRepository jpaRepository) {
-        this.jpaRepository = jpaRepository;
+    public AuthUserPersistenceAdapter(ISpringDataAuthUserRepository springDataAuthUserRepository) {
+        this.springDataAuthUserRepository = springDataAuthUserRepository;
     }
 
     @Override
     public boolean existsByUsername(String username) {
-        return jpaRepository.existsByUsername(username);
+        return springDataAuthUserRepository.existsByUsername(username);
     }
 
     @Override
     public Optional<AuthUser> findByUsername(String username) {
-        return jpaRepository.findByUsername(username)
+        return springDataAuthUserRepository.findByUsername(username)
                 .map(this::toDomain);
+    }
+
+    @Override
+    public Optional<AuthUser> findById(Long id) {
+        return springDataAuthUserRepository.findById(id)
+                .map(this::toDomain);
+    }
+
+    @Override
+    public List<AuthUser> findAll() {
+        return springDataAuthUserRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
     public AuthUser save(AuthUser user) {
         AuthUserEntity entity = toEntity(user);
-        AuthUserEntity savedEntity = jpaRepository.save(entity);
+        AuthUserEntity savedEntity = springDataAuthUserRepository.save(entity);
         return toDomain(savedEntity);
     }
 
@@ -38,7 +53,8 @@ public class AuthUserPersistenceAdapter implements IAuthUserRepositoryPort {
                 entity.getId(),
                 entity.getUsername(),
                 entity.getPasswordHash(),
-                entity.getRole()
+                entity.getRole(),
+                entity.isEnabled()
         );
     }
 
@@ -47,7 +63,8 @@ public class AuthUserPersistenceAdapter implements IAuthUserRepositoryPort {
                 user.getId(),
                 user.getUsername(),
                 user.getPasswordHash(),
-                user.getRole()
+                user.getRole(),
+                user.isEnabled()
         );
     }
 }

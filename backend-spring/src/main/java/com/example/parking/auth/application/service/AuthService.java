@@ -1,63 +1,194 @@
 package com.example.parking.auth.application.service;
 
-import com.example.parking.auth.application.port.in.IAuthUseCase;
+import com.example.parking.auth.adapter.in.web.dto.LoginRequest;
+import com.example.parking.auth.adapter.in.web.dto.LoginResponse;
+import com.example.parking.auth.adapter.in.web.dto.RegisterRequest;
+import com.example.parking.auth.adapter.in.web.dto.RegisterResponse;
+import com.example.parking.auth.application.port.in.ICreateAccountUseCase;
+import com.example.parking.auth.application.port.in.IGetAccountUseCase;
+import com.example.parking.auth.application.port.in.ILoginUseCase;
+import com.example.parking.auth.application.port.in.ILockAccountUseCase;
+import com.example.parking.auth.application.port.in.IRegisterUserUseCase;
+import com.example.parking.auth.application.port.in.IUnlockAccountUseCase;
 import com.example.parking.auth.application.port.out.IAuthUserRepositoryPort;
+import com.example.parking.auth.application.port.out.IJwtTokenProviderPort;
 import com.example.parking.auth.application.port.out.IPasswordEncoderPort;
 import com.example.parking.auth.domain.model.AuthUser;
-import com.example.parking.auth.domain.model.UserRole;
-import com.example.parking.auth.dto.AuthResponse;
-import com.example.parking.auth.dto.LoginRequest;
-import com.example.parking.auth.dto.RegisterRequest;
-import com.example.parking.shared.exception.BadRequestException;
-import com.example.parking.shared.exception.ConflictException;
+import com.example.parking.auth.domain.model.Role;
+import com.example.parking.shared.exception.BusinessException;
+import com.example.parking.shared.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
-public class AuthService implements IAuthUseCase {
+public class AuthService implements
+        IRegisterUserUseCase,
+        ILoginUseCase,
+        IGetAccountUseCase,
+        ICreateAccountUseCase,
+        ILockAccountUseCase,
+        IUnlockAccountUseCase {
 
-    private final IAuthUserRepositoryPort userRepositoryPort;
+    private final IAuthUserRepositoryPort authUserRepositoryPort;
     private final IPasswordEncoderPort passwordEncoderPort;
+    private final IJwtTokenProviderPort jwtTokenProviderPort;
 
-    public AuthService(IAuthUserRepositoryPort userRepositoryPort,
-                       IPasswordEncoderPort passwordEncoderPort) {
-        this.userRepositoryPort = userRepositoryPort;
+    public AuthService(
+            IAuthUserRepositoryPort authUserRepositoryPort,
+            IPasswordEncoderPort passwordEncoderPort,
+            IJwtTokenProviderPort jwtTokenProviderPort
+    ) {
+        this.authUserRepositoryPort = authUserRepositoryPort;
         this.passwordEncoderPort = passwordEncoderPort;
+        this.jwtTokenProviderPort = jwtTokenProviderPort;
     }
 
     @Override
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepositoryPort.existsByUsername(request.username())) {
-            throw new ConflictException("Username '" + request.username() + "' đã tồn tại");
+    public RegisterResponse register(RegisterRequest request) {
+        String username = normalizeUsername(request.getUsername());
+
+        if (authUserRepositoryPort.existsByUsername(username)) {
+            throw new BusinessException("Username already exists");
         }
 
-        UserRole role = parseRole(request.role());
-        String passwordHash = passwordEncoderPort.encode(request.password());
-        AuthUser user = new AuthUser(null, request.username(), passwordHash, role);
-        AuthUser saved = userRepositoryPort.save(user);
+        if (request.getRole() != null && request.getRole() != Role.USER) {
+            throw new BusinessException("Public registration only allows USER role");
+        }
 
-        return new AuthResponse(saved.getId(), saved.getUsername(),
-                saved.getRole().name(), "demo-token-" + saved.getId());
+        String passwordHash = passwordEncoderPort.encode(request.getPassword());
+
+        AuthUser newUser = new AuthUser(
+                null,
+                username,
+                passwordHash,
+                Role.USER,
+                true
+        );
+
+        AuthUser savedUser = authUserRepositoryPort.save(newUser);
+
+        return new RegisterResponse(
+                savedUser.getId(),
+                savedUser.getUsername(),
+                savedUser.getRole()
+        );
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
-        AuthUser user = userRepositoryPort.findByUsername(request.username())
-                .orElseThrow(() -> new BadRequestException("Sai username hoặc password"));
+    public LoginResponse login(LoginRequest request) {
+        String username = normalizeUsername(request.getUsername());
 
-        if (!passwordEncoderPort.matches(request.password(), user.getPasswordHash())) {
-            throw new BadRequestException("Sai username hoặc password");
+        AuthUser user = authUserRepositoryPort.findByUsername(username)
+                .orElseThrow(() -> new BusinessException("Invalid username or password"));
+
+        if (!user.isEnabled()) {
+            throw new BusinessException("Account is locked");
         }
 
-        return new AuthResponse(user.getId(), user.getUsername(),
-                user.getRole().name(), "demo-token-" + user.getId());
+        boolean passwordMatched = passwordEncoderPort.matches(
+                request.getPassword(),
+                user.getPasswordHash()
+        );
+
+        if (!passwordMatched) {
+            throw new BusinessException("Invalid username or password");
+        }
+
+        String accessToken = jwtTokenProviderPort.generateToken(user);
+
+        return new LoginResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                "Bearer",
+                accessToken
+        );
     }
 
-    private UserRole parseRole(String role) {
-        if (role == null || role.isBlank()) return UserRole.STAFF;
-        try {
-            return UserRole.valueOf(role.toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Role không hợp lệ: " + role);
+    @Override
+    public List<AuthUser> getAllAccounts() {
+        return authUserRepositoryPort.findAll();
+    }
+
+    @Override
+    public AuthUser createAccount(String username, String password, Role role) {
+        String normalizedUsername = normalizeUsername(username);
+
+        if (authUserRepositoryPort.existsByUsername(normalizedUsername)) {
+            throw new BusinessException("Username already exists");
         }
+
+        if (role == null) {
+            throw new BusinessException("Role is required");
+        }
+
+        if (role == Role.USER) {
+            throw new BusinessException("Admin account management only allows ADMIN or STAFF role");
+        }
+
+        String passwordHash = passwordEncoderPort.encode(password);
+
+        AuthUser newAccount = new AuthUser(
+                null,
+                normalizedUsername,
+                passwordHash,
+                role,
+                true
+        );
+
+        return authUserRepositoryPort.save(newAccount);
+    }
+
+    @Override
+    public AuthUser lockAccount(Long accountId, Long currentAdminId) {
+        AuthUser account = authUserRepositoryPort.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        if (currentAdminId != null && account.getId().equals(currentAdminId)) {
+            throw new BusinessException("Admin cannot lock own account");
+        }
+
+        if (!account.isEnabled()) {
+            throw new BusinessException("Account is already locked");
+        }
+
+        AuthUser lockedAccount = new AuthUser(
+                account.getId(),
+                account.getUsername(),
+                account.getPasswordHash(),
+                account.getRole(),
+                false
+        );
+
+        return authUserRepositoryPort.save(lockedAccount);
+    }
+
+    @Override
+    public AuthUser unlockAccount(Long accountId) {
+        AuthUser account = authUserRepositoryPort.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        if (account.isEnabled()) {
+            throw new BusinessException("Account is already active");
+        }
+
+        AuthUser unlockedAccount = new AuthUser(
+                account.getId(),
+                account.getUsername(),
+                account.getPasswordHash(),
+                account.getRole(),
+                true
+        );
+
+        return authUserRepositoryPort.save(unlockedAccount);
+    }
+
+    private String normalizeUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new BusinessException("Username is required");
+        }
+
+        return username.trim();
     }
 }
