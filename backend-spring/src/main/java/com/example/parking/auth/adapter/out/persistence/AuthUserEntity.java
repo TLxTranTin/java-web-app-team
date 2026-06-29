@@ -21,29 +21,37 @@ public class AuthUserEntity {
     @Column(nullable = false, length = 30)
     private UserRole role;
 
-    public AuthUserEntity() {
-    }
+    @Column(length = 150)
+    private String fullName;
 
-    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role) {
+    @Column(length = 150)
+    private String email;
+
+    @Column(length = 20)
+    private String phone;
+
+    public AuthUserEntity() {}
+
+    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role,
+                          String fullName, String email, String phone) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.role = role;
+        this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
     }
 
-    public Long getId() {
-        return id;
+    public AuthUserEntity(Long id, String username, String passwordHash, UserRole role) {
+        this(id, username, passwordHash, role, null, null, null);
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public UserRole getRole() {
-        return role;
-    }
+    public Long getId()            { return id; }
+    public String getUsername()    { return username; }
+    public String getPasswordHash(){ return passwordHash; }
+    public UserRole getRole()      { return role; }
+    public String getFullName()    { return fullName; }
+    public String getEmail()       { return email; }
+    public String getPhone()       { return phone; }
 }
