@@ -1,5 +1,7 @@
 package com.example.parking.payment.domain.model;
 
 public enum PaymentMethod {
-    CASH, CARD, TRANSFER
+    MOCK,
+    CASH,
+    BANK_TRANSFER
 }

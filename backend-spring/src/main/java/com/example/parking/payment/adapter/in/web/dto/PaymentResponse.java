@@ -1,10 +1,13 @@
-package com.example.parking.payment.domain.model;
+package com.example.parking.payment.adapter.in.web.dto;
+
+import com.example.parking.payment.domain.model.PaymentMethod;
+import com.example.parking.payment.domain.model.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class Payment {
+public class PaymentResponse {
 
     private final Long id;
     private final Long userId;
@@ -14,7 +17,7 @@ public class Payment {
     private final LocalDateTime paidAt;
     private final List<Long> invoiceIds;
 
-    public Payment(
+    public PaymentResponse(
             Long id,
             Long userId,
             BigDecimal amount,
@@ -29,7 +32,7 @@ public class Payment {
         this.status = status;
         this.method = method;
         this.paidAt = paidAt;
-        this.invoiceIds = invoiceIds == null ? List.of() : List.copyOf(invoiceIds);
+        this.invoiceIds = invoiceIds;
     }
 
     public Long getId() {
